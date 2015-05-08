@@ -57,8 +57,8 @@ public class MetricsService extends AbstractService implements QueueListener {
         queueManager = eventbus.getQueueManager();
         queueManager.register(this);
         final String host = System.getProperty(PREFIX + "." + STATSD_HOST);
-        final Integer port = Integer.valueOf(System.getProperty(PREFIX + "." + STATSD_HOST));
-        final String prefix = System.getProperty(PREFIX + "." + STATSD_HOST);
+        final Integer port = Integer.valueOf(System.getProperty(PREFIX + "." + STATSD_PORT));
+        final String prefix = System.getProperty(PREFIX + "." + STATSD_PREFIX);
         client.server(host).port(port).prefix(prefix);
     }
 
