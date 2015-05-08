@@ -8,6 +8,7 @@ import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
+import io.galeb.core.model.Metrics;
 import io.galeb.core.model.Rule;
 import io.galeb.core.queue.QueueListener;
 import io.galeb.core.queue.QueueManager;
@@ -17,9 +18,9 @@ import io.galeb.core.statsd.StatsdClient;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
-public class Metrics extends AbstractService implements QueueListener {
+public class MetricsService extends AbstractService implements QueueListener {
 
-    public static final String PREFIX = Metrics.class.getPackage().getName();
+    public static final String PREFIX = MetricsService.class.getPackage().getName();
 
     public static final String STATSD_HOST = "statsdHost";
     public static final String STATSD_PORT = "statsdPort";
@@ -44,7 +45,7 @@ public class Metrics extends AbstractService implements QueueListener {
     private QueueManager queueManager = QueueManager.NULL;
 
     @PostConstruct
-    protected void init() {
+    public void init() {
         super.prelaunch();
 
         startGateway();
@@ -63,12 +64,12 @@ public class Metrics extends AbstractService implements QueueListener {
 
     @Override
     public void onEvent(Serializable data) {
-        if (data instanceof io.galeb.core.model.Metrics) {
-            final io.galeb.core.model.Metrics metrics = (io.galeb.core.model.Metrics) data;
-            final Long requestTimeAvg = (Long) metrics.getProperties().get(io.galeb.core.model.Metrics.PROP_REQUESTTIME_AVG);
+        if (data instanceof Metrics) {
+            final Metrics metrics = (Metrics) data;
+            final Long requestTimeAvg = (Long) metrics.getProperties().get(Metrics.PROP_REQUESTTIME_AVG);
             sendRequestTime(metrics, requestTimeAvg);
             for (final String propertyName: metrics.getProperties().keySet()) {
-                if (propertyName.startsWith(io.galeb.core.model.Metrics.PROP_HTTPCODE_PREFIX)) {
+                if (propertyName.startsWith(Metrics.PROP_HTTPCODE_PREFIX)) {
                     final Integer statusCodeCount = (Integer) metrics.getProperties().get(propertyName);
                     sendStatusCodeCount(metrics, propertyName, statusCodeCount);
                 }
@@ -76,7 +77,7 @@ public class Metrics extends AbstractService implements QueueListener {
         }
     }
 
-    private String extractMetricKeyPrefix(io.galeb.core.model.Metrics metrics) {
+    private String extractMetricKeyPrefix(Metrics metrics) {
         final String virtualHostId = metrics.getParentId();
         final String backendId = metrics.getId();
 
@@ -91,15 +92,15 @@ public class Metrics extends AbstractService implements QueueListener {
         return clusterId + "." + virtualHostId + "." + backendId;
     }
 
-    private void sendStatusCodeCount(io.galeb.core.model.Metrics metrics, String httpCodeName, Integer statusCodeCount) {
+    private void sendStatusCodeCount(Metrics metrics, String httpCodeName, Integer statusCodeCount) {
         final String metricKeyPrefix = extractMetricKeyPrefix(metrics);
         final String metricName = metricKeyPrefix + "." + httpCodeName;
         client.count(metricName, statusCodeCount);
     }
 
-    private void sendRequestTime(io.galeb.core.model.Metrics metrics, Long requestTimeAvg) {
+    private void sendRequestTime(Metrics metrics, Long requestTimeAvg) {
         final String metricKeyPrefix = extractMetricKeyPrefix(metrics);
-        final String metricName = metricKeyPrefix + "." + io.galeb.core.model.Metrics.PROP_REQUESTTIME;
+        final String metricName = metricKeyPrefix + "." + Metrics.PROP_REQUESTTIME;
         client.timing(metricName, requestTimeAvg);
     }
 

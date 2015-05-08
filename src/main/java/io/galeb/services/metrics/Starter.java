@@ -11,7 +11,7 @@ public class Starter extends AbstractStarter {
 
     public static void main(String[] args) {
 
-        loadService(Metrics.class);
+        loadService(MetricsService.class);
 
     }
 
