@@ -1,7 +1,5 @@
 package io.galeb.services.metrics;
 
-import java.io.Serializable;
-
 import io.galeb.core.controller.EntityController.Action;
 import io.galeb.core.eventbus.Event;
 import io.galeb.core.json.JsonObject;
@@ -14,6 +12,8 @@ import io.galeb.core.queue.QueueListener;
 import io.galeb.core.queue.QueueManager;
 import io.galeb.core.services.AbstractService;
 import io.galeb.core.statsd.StatsdClient;
+
+import java.io.Serializable;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -66,11 +66,11 @@ public class MetricsService extends AbstractService implements QueueListener {
     public void onEvent(Serializable data) {
         if (data instanceof Metrics) {
             final Metrics metrics = (Metrics) data;
-            final Long requestTimeAvg = (Long) metrics.getProperties().get(Metrics.PROP_REQUESTTIME_AVG);
+            final Long requestTimeAvg = (Long) metrics.getProperty(Metrics.PROP_REQUESTTIME_AVG);
             sendRequestTime(metrics, requestTimeAvg);
             for (final String propertyName: metrics.getProperties().keySet()) {
                 if (propertyName.startsWith(Metrics.PROP_HTTPCODE_PREFIX)) {
-                    final Integer statusCodeCount = (Integer) metrics.getProperties().get(propertyName);
+                    final Integer statusCodeCount = (Integer) metrics.getProperty(propertyName);
                     sendStatusCodeCount(metrics, propertyName, statusCodeCount);
                 }
             }
@@ -114,11 +114,11 @@ public class MetricsService extends AbstractService implements QueueListener {
         final Object eventType = event.getType();
 
         if (entity instanceof Backend && eventType instanceof Action && eventType == Action.CHANGE) {
-            final BackendPool backendPool = (BackendPool) farm.getBackend(entity.getParentId());
+            final BackendPool backendPool = (BackendPool) farm.getBackends(entity.getParentId());
             String virtualhostId = "";
 
             for (final Rule rule: farm.getRules()){
-                if (rule.getProperties().get(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
+                if (rule.getProperty(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
                     virtualhostId = rule.getParentId();
                     break;
                 }
