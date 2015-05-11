@@ -126,21 +126,34 @@ public class MetricsService extends AbstractService implements QueueListener {
 
         final JsonObject json = event.getData();
         final Entity entity = (Entity) json.instanceOf(Entity.class);
+        final String backendEntityName = Backend.class.getSimpleName().toLowerCase();
+        Action action = Action.UNKNOWN;
 
-        if (entity instanceof Backend && Action.CHANGE.equals(event.getType())) {
-            final Backend backend = (Backend) entity;
-            final BackendPool backendPool = farm.getBackendPool(backend.getParentId());
-            String virtualhostId = "";
-            String lastVirtualhost = "";
+        if (event.getType() instanceof Action) {
+            action = (Action)event.getType();
+        }
 
-            for (final Rule rule: farm.getRules()){
-                if (rule.getProperty(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
-                    virtualhostId = rule.getParentId();
-                    if (virtualhostId != null && !virtualhostId.equals(lastVirtualhost)) {
-                        lastVirtualhost = virtualhostId;
-                        final String metricKeyPrefix = extractMetricKeyPrefix(virtualhostId, backend.getId());
-                        final String metricName = metricKeyPrefix + "." + Backend.PROP_ACTIVECONN;
-                        client.count(metricName, backend.getConnections());
+        if (entity.getEntityType().equals(backendEntityName) && action == Action.CHANGE) {
+
+            for (final Backend backend : farm.getBackends(entity.getId())) {
+                final BackendPool backendPool = farm.getBackendPool(backend.getParentId());
+
+                if (backendPool==null) {
+                    logger.error(backend.getParentId() + " NOT FOUND");
+                    return;
+                }
+                String virtualhostId = "";
+                String lastVirtualhost = "";
+
+                for (final Rule rule: farm.getRules()){
+                    if (rule.getProperty(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
+                        virtualhostId = rule.getParentId();
+                        if (virtualhostId != null && !virtualhostId.equals(lastVirtualhost)) {
+                            lastVirtualhost = virtualhostId;
+                            final String metricKeyPrefix = extractMetricKeyPrefix(virtualhostId, backend.getId());
+                            final String metricName = metricKeyPrefix + "." + Backend.PROP_ACTIVECONN;
+                            client.gauge(metricName, Integer.valueOf(backend.getConnections()).doubleValue());
+                        }
                     }
                 }
             }
