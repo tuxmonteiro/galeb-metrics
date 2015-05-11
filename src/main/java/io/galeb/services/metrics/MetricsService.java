@@ -102,7 +102,7 @@ public class MetricsService extends AbstractService implements QueueListener {
 
     private String extractMetricKeyPrefix(String virtualHostId, String backendId) {
         virtualHostId = virtualHostId.replace(".", "_");
-        backendId = backendId.replace(".", "_");
+        backendId = backendId.replaceAll("http://", "").replaceAll("[.:]", "_");
         final String clusterId = eventbus.getClusterId().replace(".", "_");
 
         return clusterId + "." + virtualHostId + "." + backendId;
