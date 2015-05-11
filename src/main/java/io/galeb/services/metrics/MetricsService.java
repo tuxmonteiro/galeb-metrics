@@ -125,23 +125,25 @@ public class MetricsService extends AbstractService implements QueueListener {
         super.onEvent(event);
 
         final JsonObject json = event.getData();
-
         final Entity entity = (Entity) json.instanceOf(Entity.class);
-        final Object eventType = event.getType();
 
-        if (entity instanceof Backend && eventType instanceof Action && eventType == Action.CHANGE) {
-            final BackendPool backendPool = (BackendPool) farm.getBackends(entity.getParentId());
+        if (entity instanceof Backend && Action.CHANGE.equals(event.getType())) {
+            final Backend backend = (Backend) entity;
+            final BackendPool backendPool = farm.getBackendPool(backend.getParentId());
             String virtualhostId = "";
+            String lastVirtualhost = "";
 
             for (final Rule rule: farm.getRules()){
                 if (rule.getProperty(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
                     virtualhostId = rule.getParentId();
-                    break;
+                    if (virtualhostId != null && !virtualhostId.equals(lastVirtualhost)) {
+                        lastVirtualhost = virtualhostId;
+                        final String metricKeyPrefix = extractMetricKeyPrefix(virtualhostId, backend.getId());
+                        final String metricName = metricKeyPrefix + "." + Backend.PROP_ACTIVECONN;
+                        client.count(metricName, backend.getConnections());
+                    }
                 }
             }
-            final String metricKeyPrefix = extractMetricKeyPrefix(virtualhostId, entity.getId());
-            final String metricName = metricKeyPrefix + "." + Backend.PROP_ACTIVECONN;
-            client.count(metricName, ((Backend) entity).getConnections());
         }
     }
 
