@@ -125,7 +125,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <outputFile>target/galeb-${project.version}-uber.jar</outputFile>
+              <outputFile>target/galeb-metrics-${project.version}-uber.jar</outputFile>
             </configuration>
           </execution>
         </executions>
@@ -155,7 +155,7 @@
             <argument>-Dlog4j.configurationFile=log4j.xml</argument>
             <argument>-Dhazelcast.config=hazelcast.xml</argument>
             <argument>-jar</argument>
-            <argument>target/galeb-${project.version}-uber.jar</argument>
+            <argument>target/galeb-metrics-${project.version}-uber.jar</argument>
           </arguments>
         </configuration>
       </plugin>
