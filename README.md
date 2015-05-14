@@ -1,5 +1,6 @@
 Galeb - Metrics Service
 ===========================
+[![Build Status](https://travis-ci.org/galeb/galeb3-metrics.svg)](https://travis-ci.org/galeb/galeb3-metrics)
 
 Galeb is a dynamic software router built on JBOSS Undertow and XNIO.<br/>
 It's a massively parallel routing system running a shared-nothing architecture.
