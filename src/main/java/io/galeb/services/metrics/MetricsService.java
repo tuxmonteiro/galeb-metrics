@@ -24,12 +24,14 @@ import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
 import io.galeb.core.model.Metrics;
 import io.galeb.core.model.Rule;
+import io.galeb.core.model.collections.BackendPoolCollection;
 import io.galeb.core.queue.QueueListener;
 import io.galeb.core.queue.QueueManager;
 import io.galeb.core.services.AbstractService;
 import io.galeb.core.statsd.StatsdClient;
 
 import java.io.Serializable;
+import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -135,28 +137,34 @@ public class MetricsService extends AbstractService implements QueueListener {
 
         if (entity.getEntityType().equals(backendEntityName) && action == Action.CHANGE) {
 
-            for (final Backend backend : farm.getBackends(entity.getId())) {
-                final BackendPool backendPool = farm.getBackendPool(backend.getParentId());
+            final BackendPoolCollection backendPoolsCollections = (BackendPoolCollection) farm.getBackendPools();
+            farm.getBackends().stream()
+                .filter(backend -> backend.getId().equals(entity.getId()))
+                .forEach(backend -> {
 
-                if (backendPool==null) {
-                    logger.error(backend.getParentId() + " NOT FOUND");
-                    return;
-                }
-                String virtualhostId = "";
-                String lastVirtualhost = "";
+                    final List<BackendPool> backendPools = backendPoolsCollections.getListByID(backend.getParentId());
 
-                for (final Rule rule: farm.getRules()){
-                    if (rule.getProperty(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
-                        virtualhostId = rule.getParentId();
-                        if (virtualhostId != null && !virtualhostId.equals(lastVirtualhost)) {
-                            lastVirtualhost = virtualhostId;
-                            final String metricKeyPrefix = extractMetricKeyPrefix(virtualhostId, backend.getId());
-                            final String metricName = metricKeyPrefix + "." + Backend.PROP_ACTIVECONN;
-                            client.gauge(metricName, Integer.valueOf(backend.getConnections()).doubleValue());
+                    if (backendPools.isEmpty()) {
+                        logger.error(backend.getParentId() + " NOT FOUND");
+                        return;
+                    }
+
+                    final BackendPool backendPool = backendPools.get(0);
+                    String virtualhostId = "";
+                    String lastVirtualhost = "";
+
+                    for (final Rule rule: farm.getRules()){
+                        if (rule.getProperty(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
+                            virtualhostId = rule.getParentId();
+                            if (virtualhostId != null && !virtualhostId.equals(lastVirtualhost)) {
+                                lastVirtualhost = virtualhostId;
+                                final String metricKeyPrefix = extractMetricKeyPrefix(virtualhostId, backend.getId());
+                                final String metricName = metricKeyPrefix + "." + Backend.PROP_ACTIVECONN;
+                                client.gauge(metricName, Integer.valueOf(backend.getConnections()).doubleValue());
+                            }
                         }
                     }
-                }
-            }
+                });
         }
     }
 
