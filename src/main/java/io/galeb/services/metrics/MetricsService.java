@@ -137,30 +137,30 @@ public class MetricsService extends AbstractService implements QueueListener {
 
         if (entity.getEntityType().equals(backendEntityName) && action == Action.CHANGE) {
 
-            final BackendPoolCollection backendPoolsCollections = (BackendPoolCollection) farm.getBackendPools();
-            farm.getBackends().stream()
+            final BackendPoolCollection backendPoolsCollections = (BackendPoolCollection) farm.getCollection(BackendPool.class);
+            farm.getCollection(Backend.class).stream()
                 .filter(backend -> backend.getId().equals(entity.getId()))
                 .forEach(backend -> {
 
-                    final List<BackendPool> backendPools = backendPoolsCollections.getListByID(backend.getParentId());
+                    final List<Entity> backendPools = backendPoolsCollections.getListByID(backend.getParentId());
 
                     if (backendPools.isEmpty()) {
                         logger.error(backend.getParentId() + " NOT FOUND");
                         return;
                     }
 
-                    final BackendPool backendPool = backendPools.get(0);
+                    final BackendPool backendPool = (BackendPool) backendPools.get(0);
                     String virtualhostId = "";
                     String lastVirtualhost = "";
 
-                    for (final Rule rule: farm.getRules()){
+                    for (final Entity rule: farm.getCollection(Rule.class)){
                         if (rule.getProperty(Rule.PROP_TARGET_ID).equals(backendPool.getId())) {
                             virtualhostId = rule.getParentId();
                             if (virtualhostId != null && !virtualhostId.equals(lastVirtualhost)) {
                                 lastVirtualhost = virtualhostId;
                                 final String metricKeyPrefix = extractMetricKeyPrefix(virtualhostId, backend.getId());
                                 final String metricName = metricKeyPrefix + "." + Backend.PROP_ACTIVECONN;
-                                client.gauge(metricName, Integer.valueOf(backend.getConnections()).doubleValue());
+                                client.gauge(metricName, Integer.valueOf(((Backend) backend).getConnections()).doubleValue());
                             }
                         }
                     }
