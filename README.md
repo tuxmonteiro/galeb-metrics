@@ -1,3 +1,5 @@
+<b>DEPRECATED - See galeb-router</b>
+
 Galeb - Metrics Service
 ===========================
 [![Build Status](https://travis-ci.org/galeb/galeb3-metrics.svg)](https://travis-ci.org/galeb/galeb3-metrics)
